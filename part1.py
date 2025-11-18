@@ -99,14 +99,27 @@ def run_main_app(username):
 
     root = tk.Tk()
     root.title("COVID Data Visualizer")
-    root.geometry("700x550")
-    root.resizable(False, False)
+    # Try to start maximized on Windows; fallback to screen dimensions
+    try:
+        root.state('zoomed')  # Windows: start maximized
+    except Exception:
+        pass
+
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.geometry(f"{screen_width}x{screen_height}")
+    root.resizable(True, True)
     root.configure(bg=MAIN_BG)
 
     # ----- Background Image -----
     try:
         bg_image = Image.open("corona.jpeg")
-        bg_image = bg_image.resize((700, 550), Image.Resampling.LANCZOS)
+        # Resize background to actual screen size for a full-window background
+        try:
+            bg_image = bg_image.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+        except Exception:
+            # Fallback to a reasonable default if screen size isn't available
+            bg_image = bg_image.resize((700, 550), Image.Resampling.LANCZOS)
         bg_photo = ImageTk.PhotoImage(bg_image)
 
         bg_label = tk.Label(root, image=bg_photo)
@@ -141,7 +154,8 @@ def run_main_app(username):
         bg=HEADER_BG,
         anchor="e"
     )
-    user_label.place(x=400, y=15, width=280, height=20)
+    # Place the user label pinned to the far right (20px padding)
+    user_label.place(relx=1.0, x=-20, y=15, anchor='ne', width=280, height=20)
 
     # ----- Input Container -----
     input_band_height = 100
@@ -355,30 +369,51 @@ def start_login_window():
 
     login_root = tk.Tk()
     login_root.title("Login - COVID Data Visualizer")
-    login_root.geometry("400x300")
-    login_root.resizable(False, False)
+    # Try to start maximized on Windows; fallback to screen dimensions
+    try:
+        login_root.state('zoomed')
+    except Exception:
+        pass
+
+    login_screen_w = login_root.winfo_screenwidth()
+    login_screen_h = login_root.winfo_screenheight()
+    login_root.geometry(f"{login_screen_w}x{login_screen_h}")
+    login_root.resizable(True, True)
     login_root.configure(bg=MAIN_BG)
 
+    # Scale fonts and sizes based on screen height/width
+    # Reasonable defaults with minimums to avoid tiny text on small screens
+    title_font_size = max(20, int(login_screen_h / 40))
+    label_font_size = max(12, int(login_screen_h / 70))
+    entry_font_size = max(12, int(login_screen_h / 80))
+    btn_font_size = max(12, int(login_screen_h / 75))
+    entry_width = max(20, int(login_screen_w / 60))
+
+    title_font = ("Helvetica", title_font_size, "bold")
+    label_font = ("Arial", label_font_size, "bold")
+    entry_font = ("Arial", entry_font_size)
+    btn_font = ("Arial", btn_font_size, "bold")
+
     tk.Label(login_root, text="Welcome",
-             font=("Helvetica", 18, "bold"),
-             bg=MAIN_BG, fg=TEXT_COLOR).pack(pady=10)
+             font=title_font,
+             bg=MAIN_BG, fg=TEXT_COLOR).pack(pady=int(login_screen_h * 0.01))
 
     form_frame = tk.Frame(login_root, bg=MAIN_BG)
     form_frame.pack(pady=5)
 
     tk.Label(form_frame, text="Username:",
-             font=("Arial", 11, "bold"),
+             font=label_font,
              bg=MAIN_BG, fg=TEXT_COLOR).grid(row=0, column=0, sticky="e", padx=5, pady=5)
     username_var = tk.StringVar()
-    username_entry = tk.Entry(form_frame, textvariable=username_var, width=25)
+    username_entry = tk.Entry(form_frame, textvariable=username_var, width=entry_width, font=entry_font)
     username_entry.grid(row=0, column=1, padx=5, pady=5)
 
     tk.Label(form_frame, text="Password:",
-             font=("Arial", 11, "bold"),
+             font=label_font,
              bg=MAIN_BG, fg=TEXT_COLOR).grid(row=1, column=0, sticky="e", padx=5, pady=5)
     password_var = tk.StringVar()
     password_entry = tk.Entry(form_frame, textvariable=password_var,
-                              width=25, show="*")
+                              width=entry_width, font=entry_font, show="*")
     password_entry.grid(row=1, column=1, padx=5, pady=5)
 
     # Show Password checkbox
@@ -401,6 +436,7 @@ def start_login_window():
         activeforeground=TEXT_COLOR,
         selectcolor=MAIN_BG
     )
+    show_pass_cb.config(font=label_font)
     show_pass_cb.grid(row=2, column=1, sticky="w", padx=5, pady=(0, 5))
 
     # Remember Me checkbox
@@ -415,6 +451,7 @@ def start_login_window():
         activeforeground=TEXT_COLOR,
         selectcolor=MAIN_BG
     )
+    remember_cb.config(font=label_font)
     remember_cb.grid(row=3, column=1, sticky="w", padx=5, pady=(0, 5))
 
     # Pre-fill remembered username (if any)
@@ -462,22 +499,22 @@ def start_login_window():
         messagebox.showinfo("Success", "Account created successfully! You can now log in.")
 
     btn_frame = tk.Frame(login_root, bg=MAIN_BG)
-    btn_frame.pack(pady=15)
+    btn_frame.pack(pady=int(login_screen_h * 0.02))
 
     login_btn = tk.Button(btn_frame, text="Login",
-                          font=("Arial", 10, "bold"),
+                          font=btn_font,
                           bg=BUTTON_COLOR, fg=TEXT_COLOR,
                           activebackground='#1565c0',
                           activeforeground=TEXT_COLOR,
-                          width=10, command=handle_login)
+                          width=12, command=handle_login)
     login_btn.grid(row=0, column=0, padx=10)
 
     signup_btn = tk.Button(btn_frame, text="Sign Up",
-                           font=("Arial", 10, "bold"),
+                           font=btn_font,
                            bg=BUTTON_COLOR, fg=TEXT_COLOR,
                            activebackground='#1565c0',
                            activeforeground=TEXT_COLOR,
-                           width=10, command=handle_signup)
+                           width=12, command=handle_signup)
     signup_btn.grid(row=0, column=1, padx=10)
 
     # focus on username field initially
